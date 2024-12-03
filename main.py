@@ -73,6 +73,37 @@ async def post(name: str, db: Session = Depends(get_db)):
     return db_user
 
 
+# Новый метод для удаления поста
+@app.delete("/posts/{post_id}")
+async def delete_post(post_id: int, db: Session = Depends(get_db)):
+    db_post = db.query(Post).filter(Post.id == post_id).first()
+    if db_post is None:
+        raise HTTPException(status_code=404, detail='Post not found')
+    db.delete(db_post)
+    db.commit()
+    return {"message": f"Post with id {post_id} has been deleted."}
+
+
+# Новый метод для удаления пользователя
+@app.delete("/users/{user_id}")
+async def delete_user(user_id: int, db: Session = Depends(get_db)):
+    db_user = db.query(User).filter(User.id == user_id).first()
+    if db_user is None:
+        raise HTTPException(status_code=404, detail='User not found')
+
+    # Проверка на наличие связанных постов
+    user_posts = db.query(Post).filter(Post.author_id == user_id).all()
+    if user_posts:
+        raise HTTPException(
+            status_code=400, 
+            detail=f"Cannot delete user with id {user_id} because they have associated posts."
+        )
+
+    db.delete(db_user)
+    db.commit()
+    return {"message": f"User with id {user_id} has been deleted."}
+
+
 # функции без базы данных
 
 
